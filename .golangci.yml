@@ -1,0 +1,23 @@
+run:
+  timeout: 2m
+
+linters:
+  # Use only the default stable set; avoid style linters that would
+  # reject the intentional one-liner error checks in example code.
+  disable:
+    - nlreturn
+    - wsl
+    - gofumpt
+    - godot
+    - exhaustruct
+    - varnamelen
+    - ireturn
+    - cyclop
+    - funlen
+    - gocognit
+    - maintidx
+    - lll
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
