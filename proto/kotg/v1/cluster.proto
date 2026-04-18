@@ -1,0 +1,186 @@
+syntax = "proto3";
+
+package kotg.v1;
+
+option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
+
+import "kotg/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// ─── ClusterRead ────────────────────────────────────────────────────────────
+// What kubilitics core exposes to the AI sidecar. All reads are subject to
+// the user's RBAC (token in metadata).
+
+service ClusterRead {
+  rpc GetCluster    (GetClusterRequest)    returns (Cluster);
+  rpc ListResources (ListResourcesRequest) returns (stream ResourceItem);
+  rpc GetResource   (GetResourceRequest)   returns (Resource);
+  rpc GetLogs       (GetLogsRequest)       returns (stream LogLine);
+  rpc GetEvents     (GetEventsRequest)     returns (stream Event);
+  rpc GetMetrics    (GetMetricsRequest)    returns (MetricSeries);
+  rpc Topology      (TopologyRequest)      returns (TopologyGraph);
+}
+
+message Cluster {
+  string cluster_id   = 1;
+  string name         = 2;
+  string distribution = 3; // "kind", "eks", "gke", "in-cluster", etc.
+  string k8s_version  = 4;
+  int32  node_count   = 5;
+  int32  namespace_count = 6;
+}
+
+message GetClusterRequest  { string cluster_id = 1; }
+
+message ListResourcesRequest {
+  string cluster_id     = 1;
+  string namespace      = 2; // empty = all
+  string kind           = 3;
+  string label_selector = 4;
+  int32  limit          = 5;
+}
+message ResourceItem { google.protobuf.Struct object = 1; } // unstructured
+
+message GetResourceRequest { ResourceRef ref = 1; }
+message Resource           { google.protobuf.Struct object = 1; }
+
+message GetLogsRequest {
+  ResourceRef pod        = 1;
+  string      container  = 2;
+  int32       tail_lines = 3;
+  bool        follow     = 4;
+}
+message LogLine {
+  google.protobuf.Timestamp ts   = 1;
+  string                    line = 2;
+}
+
+message GetEventsRequest {
+  string cluster_id = 1;
+  string namespace  = 2;
+  int64  since_unix = 3;
+}
+message Event {
+  google.protobuf.Timestamp ts        = 1;
+  string                    type      = 2; // Normal | Warning
+  string                    reason    = 3;
+  string                    message   = 4;
+  ResourceRef               involved  = 5;
+}
+
+message GetMetricsRequest {
+  ResourceRef ref         = 1;
+  string      metric_name = 2; // "cpu.usage", "memory.usage", etc.
+  int64       from_unix   = 3;
+  int64       to_unix     = 4;
+  string      step        = 5; // "30s", "1m", ...
+}
+message MetricSeries {
+  message Point {
+    int64  ts    = 1;
+    double value = 2;
+  }
+  repeated Point points = 1;
+}
+
+message TopologyRequest { string cluster_id = 1; string namespace = 2; }
+message TopologyGraph {
+  message Node { string id = 1; string kind = 2; string name = 3; string namespace = 4; }
+  message Edge { string from = 1; string to = 2; string kind = 3; }
+  repeated Node nodes = 1;
+  repeated Edge edges = 2;
+}
+
+// ─── ClusterAction ──────────────────────────────────────────────────────────
+// What kubilitics core exposes for AI-initiated mutations. Every result
+// carries an undo_token (REQUIRED by spec §5.2) for the rollback
+// differentiator.
+
+service ClusterAction {
+  rpc PreviewAction (ActionRequest)        returns (ActionPreview);
+  rpc ProposeAction (ActionRequest)        returns (ActionProposal);
+  rpc ApproveAction (ApproveActionRequest) returns (ActionResult);
+  rpc Apply         (ApplyRequest)         returns (ActionResult);
+  rpc Delete        (DeleteRequest)        returns (ActionResult);
+  rpc Scale         (ScaleRequest)         returns (ActionResult);
+  rpc Exec          (ExecRequest)          returns (stream ExecChunk);
+  rpc Undo          (UndoRequest)          returns (ActionResult);
+}
+
+// ActionRequest is the discriminated input for Preview/Propose. The action
+// itself sits in the `action` oneof.
+message ActionRequest {
+  ResourceRef target  = 1;
+  oneof action {
+    ApplyRequest  apply  = 2;
+    DeleteRequest del    = 3;
+    ScaleRequest  scale  = 4;
+  }
+}
+
+message ActionPreview {
+  ActionTier tier = 1;
+  Diff       diff = 2;
+}
+
+message ActionProposal {
+  string proposal_id = 1; // referenced by ApproveActionRequest
+  ActionTier tier    = 2;
+  Diff       diff    = 3;
+}
+
+message ApproveActionRequest { string proposal_id = 1; }
+
+message ApplyRequest  { ResourceRef target = 1; string yaml = 2; }
+message DeleteRequest { ResourceRef target = 1; bool   force = 2; }
+message ScaleRequest  { ResourceRef target = 1; int32  replicas = 2; }
+message ExecRequest   { ResourceRef target = 1; string container = 2; repeated string command = 3; }
+message ExecChunk     { bytes data = 1; bool is_stderr = 2; int32 exit_code = 3; }
+message UndoRequest   { string undo_token = 1; }
+
+// ActionResult is what every mutating call returns. undo_token and
+// undo_ttl_seconds are REQUIRED non-empty. The kubilitics core action
+// gateway captures pre-state under the token before mutating.
+message ActionResult {
+  bool        ok                = 1;
+  string      message           = 2;
+  Diff        applied_diff      = 3;
+  string      undo_token        = 4; // required; non-empty
+  int32       undo_ttl_seconds  = 5; // required; >0 for any successful mutation
+  AuditExtras audit             = 6;
+}
+
+// ─── ActionTemplate ─────────────────────────────────────────────────────────
+// Multi-step plans. The user approves once; the gateway executes
+// atomically with built-in per-step rollback if any step fails or is
+// undone later. Powers the action-templates differentiator.
+
+service ActionTemplate {
+  rpc CreatePlan  (PlanRequest)        returns (Plan);
+  rpc ApprovePlan (ApprovePlanRequest) returns (PlanResult);
+  rpc CancelPlan  (CancelPlanRequest)  returns (Empty);
+}
+
+message PlanRequest {
+  string                summary = 1;
+  repeated ActionRequest steps  = 2;
+}
+
+message Plan {
+  string                 plan_id      = 1;
+  string                 summary      = 2;
+  repeated ActionPreview step_preview = 3;
+  Diff                   combined_diff = 4;
+}
+
+message ApprovePlanRequest { string plan_id = 1; }
+message CancelPlanRequest  { string plan_id = 1; }
+
+message PlanResult {
+  bool                  ok                = 1;
+  string                message           = 2;
+  repeated ActionResult per_step          = 3;
+  string                plan_undo_token   = 4; // undoes the entire plan
+  int32                 undo_ttl_seconds  = 5;
+}
