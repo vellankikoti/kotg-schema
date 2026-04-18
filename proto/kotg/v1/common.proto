@@ -4,7 +4,7 @@ package kotg.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
+option go_package = "github.com/vellankikoti/kotg-schema/gen/go/kotg/v1;kotgv1";
 
 // ActionTier classifies a cluster mutation by risk. The kubilitics core
 // action gateway uses this to decide whether to auto-allow, banner,

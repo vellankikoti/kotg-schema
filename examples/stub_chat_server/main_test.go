@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	kotgv1 "github.com/kubilitics/kotg-schema/gen/go/kotg/v1"
+	kotgv1 "github.com/vellankikoti/kotg-schema/gen/go/kotg/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

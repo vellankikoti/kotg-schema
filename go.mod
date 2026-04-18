@@ -1,4 +1,4 @@
-module github.com/kubilitics/kotg-schema
+module github.com/vellankikoti/kotg-schema
 
 go 1.24.1
 

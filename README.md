@@ -39,7 +39,7 @@ Semver, `v1.x.y`. Patch + minor are additive only — old generated code keeps c
 ## Using from Go
 
 ```go
-import kotgv1 "github.com/kubilitics/kotg-schema/gen/go/kotg/v1"
+import kotgv1 "github.com/vellankikoti/kotg-schema/gen/go/kotg/v1"
 ```
 
 See `examples/stub_cluster_server/` and `examples/stub_chat_server/` for minimal working servers.

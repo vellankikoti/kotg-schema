@@ -5,7 +5,7 @@ package kotg.v1;
 import "google/protobuf/timestamp.proto";
 import "kotg/v1/common.proto";
 
-option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
+option go_package = "github.com/vellankikoti/kotg-schema/gen/go/kotg/v1;kotgv1";
 
 // ─── Chat ───────────────────────────────────────────────────────────────────
 // What kotg-ai-server exposes for the conversational surface. Streamed.

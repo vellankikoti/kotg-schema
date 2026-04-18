@@ -6,7 +6,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "kotg/v1/common.proto";
 
-option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
+option go_package = "github.com/vellankikoti/kotg-schema/gen/go/kotg/v1;kotgv1";
 
 // ─── ClusterRead ────────────────────────────────────────────────────────────
 // What kubilitics core exposes to the AI sidecar. All reads are subject to
