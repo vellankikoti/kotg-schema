@@ -1,8 +1,8 @@
 version: "2"
 
 linters:
-  # Disable style-only linters that would reject intentional
-  # one-liner error checks in example/test code.
+  # Disable style-only and opinionated linters that would reject
+  # intentional one-liner error checks in example/test code.
   disable:
     - nlreturn
     - wsl
@@ -17,10 +17,6 @@ linters:
     - lll
     - mnd
     - gomnd
-
-formatters:
-  disable:
-    - gofumpt
 
 issues:
   max-issues-per-linter: 0
