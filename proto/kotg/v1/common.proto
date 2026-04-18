@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package kotg.v1;
+
+option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ActionTier classifies a cluster mutation by risk. The kubilitics core
+// action gateway uses this to decide whether to auto-allow, banner,
+// confirm, or modal-approve.
+enum ActionTier {
+  ACTION_TIER_UNSPECIFIED = 0;
+  ACTION_TIER_READ        = 1; // get/list/watch/logs/describe
+  ACTION_TIER_WRITE_SAFE  = 2; // label/annotate/scale-up
+  ACTION_TIER_WRITE_RISKY = 3; // apply/scale-down/edit-secret
+  ACTION_TIER_DESTRUCTIVE = 4; // delete/exec/restart/drain
+}
+
+// ResourceRef identifies a Kubernetes object across clusters.
+message ResourceRef {
+  string cluster_id  = 1;
+  string namespace   = 2;
+  string kind        = 3;
+  string api_version = 4;
+  string name        = 5;
+}
+
+// Diff is a pre-rendered before/after pair plus a unified diff string.
+// The unified field is precomputed so the UI does not recompute on every
+// render.
+message Diff {
+  string before_yaml = 1;
+  string after_yaml  = 2;
+  string unified     = 3;
+}
+
+// AuditExtras is metadata appended to every audit row produced by an AI
+// action. Lives next to the existing kubilitics audit fields.
+message AuditExtras {
+  string     session_id     = 1;
+  string     turn_id        = 2;
+  string     model          = 3; // e.g. "claude-3.5-sonnet"
+  string     provider       = 4; // e.g. "anthropic"
+  string     prompt_excerpt = 5; // first 200 chars, redacted
+  ActionTier tier           = 6;
+}
+
+// HealthStatus is returned by AIControl.Health.
+message HealthStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OK          = 1;
+    STATE_DEGRADED    = 2;
+    STATE_UNAVAILABLE = 3;
+  }
+  State                     state    = 1;
+  string                    detail   = 2;
+  google.protobuf.Timestamp ts       = 3;
+}
+
+// Empty is a no-arg / no-return placeholder. Defined locally so both
+// services can reference it without importing google/protobuf/empty.
+message Empty {}
