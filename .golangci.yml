@@ -16,7 +16,6 @@ linters:
     - maintidx
     - lll
     - mnd
-    - gomnd
 
 issues:
   max-issues-per-linter: 0
