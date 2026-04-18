@@ -16,6 +16,7 @@ linters:
     - maintidx
     - lll
     - mnd
+    - errcheck
 
 issues:
   max-issues-per-linter: 0
