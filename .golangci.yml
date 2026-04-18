@@ -1,9 +1,8 @@
-run:
-  timeout: 2m
+version: "2"
 
 linters:
-  # Use only the default stable set; avoid style linters that would
-  # reject the intentional one-liner error checks in example code.
+  # Disable style-only linters that would reject intentional
+  # one-liner error checks in example/test code.
   disable:
     - nlreturn
     - wsl
@@ -17,6 +16,8 @@ linters:
     - gocognit
     - maintidx
     - lll
+    - mnd
+    - gomnd
 
 issues:
   max-issues-per-linter: 0

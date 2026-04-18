@@ -25,5 +25,5 @@ jobs:
       - run: go test ./... -count=1 -timeout=60s
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.60
+          version: v2.1.6
           args: --timeout=2m ./examples/...
