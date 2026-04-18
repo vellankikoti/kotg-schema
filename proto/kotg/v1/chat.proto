@@ -2,39 +2,39 @@ syntax = "proto3";
 
 package kotg.v1;
 
-option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
-
-import "kotg/v1/common.proto";
 import "google/protobuf/timestamp.proto";
+import "kotg/v1/common.proto";
+
+option go_package = "github.com/kubilitics/kotg-schema/gen/go/kotg/v1;kotgv1";
 
 // ─── Chat ───────────────────────────────────────────────────────────────────
 // What kotg-ai-server exposes for the conversational surface. Streamed.
 
 service Chat {
-  rpc CreateSession (CreateSessionRequest) returns (Session);
-  rpc Send          (stream UserMessage)   returns (stream AssistantEvent);
-  rpc CancelTurn    (CancelTurnRequest)    returns (Empty);
-  rpc ListSessions  (ListSessionsRequest)  returns (stream Session);
+  rpc CreateSession(CreateSessionRequest) returns (Session);
+  rpc Send(stream UserMessage) returns (stream AssistantEvent);
+  rpc CancelTurn(CancelTurnRequest) returns (Empty);
+  rpc ListSessions(ListSessionsRequest) returns (stream Session);
 }
 
 message Session {
-  string                    session_id        = 1;
-  string                    title             = 2;
-  string                    focus_cluster_id  = 3;
-  google.protobuf.Timestamp created_at        = 4;
-  google.protobuf.Timestamp updated_at        = 5;
-  int32                     turn_count        = 6;
+  string session_id = 1;
+  string title = 2;
+  string focus_cluster_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  int32 turn_count = 6;
 }
 
 message CreateSessionRequest {
   string focus_cluster_id = 1;
-  string title            = 2; // optional; AI may auto-title later
+  string title = 2; // optional; AI may auto-title later
 }
 
 message UserMessage {
   string session_id = 1;
-  string turn_id    = 2;
-  string text       = 3;
+  string turn_id = 2;
+  string text = 3;
   // Optional: client may attach a structured context hint, e.g. "the user
   // is currently looking at deployment X in namespace Y". Kept generic so
   // the schema doesn't lock in UI specifics.
@@ -43,7 +43,7 @@ message UserMessage {
 
 message CancelTurnRequest {
   string session_id = 1;
-  string turn_id    = 2;
+  string turn_id = 2;
 }
 
 message ListSessionsRequest {
@@ -57,67 +57,69 @@ message ListSessionsRequest {
 message AssistantEvent {
   string anchor_id = 100; // monotonic per-turn id; Citation refers to it
   oneof event {
-    TextDelta     text_delta     = 1;
-    ToolStart     tool_start     = 2;
-    ToolEnd       tool_end       = 3;
+    TextDelta text_delta = 1;
+    ToolStart tool_start = 2;
+    ToolEnd tool_end = 3;
     ActionPending action_pending = 4;
-    PlanProposed  plan_proposed  = 5;
-    Citation      citation       = 6;
-    ErrorEvent    error          = 7;
-    Done          done           = 8;
+    PlanProposed plan_proposed = 5;
+    Citation citation = 6;
+    ErrorEvent error = 7;
+    Done done = 8;
   }
 }
 
-message TextDelta { string text = 1; }
+message TextDelta {
+  string text = 1;
+}
 
 message ToolStart {
   string tool_call_id = 1;
-  string tool_name    = 2;
-  string preview      = 3; // human-readable, e.g. "Looking up pods in default..."
+  string tool_name = 2;
+  string preview = 3; // human-readable, e.g. "Looking up pods in default..."
 }
 
 message ToolEnd {
   string tool_call_id = 1;
-  bool   ok           = 2;
-  string preview      = 3; // e.g. "Found 14 pods"
+  bool ok = 2;
+  string preview = 3; // e.g. "Found 14 pods"
 }
 
 // ActionPending is emitted when the AI proposes an action that requires
 // human approval. The full preview travels with the event so the UI can
 // render the modal without a round-trip.
 message ActionPending {
-  string         proposal_id = 1;
-  ActionTier     tier        = 2;
-  Diff           diff        = 3;
-  string         summary     = 4;
+  string proposal_id = 1;
+  ActionTier tier = 2;
+  Diff diff = 3;
+  string summary = 4;
 }
 
 message PlanProposed {
   string plan_id = 1;
   string summary = 2;
-  Diff   combined_diff = 3;
-  int32  step_count = 4;
+  Diff combined_diff = 3;
+  int32 step_count = 4;
 }
 
 // Citation links assistant text to the tool result that supports it.
 // Powers the receipts differentiator.
 message Citation {
   string assistant_text_anchor_id = 1; // matches an AssistantEvent.anchor_id
-  string tool_call_id             = 2; // points to a ToolEnd
-  string short_label              = 3; // e.g., "OOMKilled event 14:32 UTC"
+  string tool_call_id = 2; // points to a ToolEnd
+  string short_label = 3; // e.g., "OOMKilled event 14:32 UTC"
 }
 
 message ErrorEvent {
-  string code    = 1;
+  string code = 1;
   string message = 2;
 }
 
 message Done {
-  bool   cancelled       = 1;
-  bool   partial         = 2;
-  int32  prompt_tokens   = 3;
-  int32  completion_tokens = 4;
-  string finish_reason   = 5; // "stop" | "length" | "cancel" | "error"
+  bool cancelled = 1;
+  bool partial = 2;
+  int32 prompt_tokens = 3;
+  int32 completion_tokens = 4;
+  string finish_reason = 5; // "stop" | "length" | "cancel" | "error"
 }
 
 // ─── AIControl ──────────────────────────────────────────────────────────────
@@ -125,15 +127,15 @@ message Done {
 // validates schema_version compatibility with this.
 
 service AIControl {
-  rpc Capabilities (Empty)       returns (AICapabilities);
-  rpc Health       (Empty)       returns (HealthStatus);
+  rpc Capabilities(Empty) returns (AICapabilities);
+  rpc Health(Empty) returns (HealthStatus);
 }
 
 message AICapabilities {
-  string                schema_version = 1; // semver, e.g. "1.0.0"
-  string                ai_version     = 2; // kotg-ai-server semver
-  repeated string       providers      = 3; // ["openai","anthropic","ollama",...]
-  repeated string       models         = 4;
-  bool                  supports_undo  = 5;
-  bool                  supports_plans = 6;
+  string schema_version = 1; // semver, e.g. "1.0.0"
+  string ai_version = 2; // kotg-ai-server semver
+  repeated string providers = 3; // ["openai","anthropic","ollama",...]
+  repeated string models = 4;
+  bool supports_undo = 5;
+  bool supports_plans = 6;
 }
