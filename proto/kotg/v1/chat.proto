@@ -65,7 +65,25 @@ message AssistantEvent {
     Citation citation = 6;
     ErrorEvent error = 7;
     Done done = 8;
+    RenderBlock render_block = 9;
   }
+}
+
+// RenderBlock is a structured renderer payload emitted directly by the
+// brain for tools classified as Deterministic. The frontend renders
+// `data` directly (kubectl-style table, YAML block, or render_error).
+// This bypasses the LLM entirely on the deterministic path — the LLM
+// never sees the tool result data, so it cannot hallucinate it.
+message RenderBlock {
+  // type names a registered RenderType (e.g. "kubectl_table",
+  // "yaml_block", "render_error"). Frontend dispatches on this.
+  string type = 1;
+  // data is opaque JSON owned by the brain's shaper. The transport
+  // layer MUST forward bytes verbatim — backend opacity guarantee.
+  bytes data = 2;
+  // summary is an optional ≤80-char single-line summary line. The
+  // brain enforces the cap before emit.
+  string summary = 3;
 }
 
 message TextDelta {
